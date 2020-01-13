@@ -1,6 +1,6 @@
 var exec = require('cordova/exec');
 
-var PLUGIN_NAME = 'utility';
+var PLUGIN_NAME = 'sbutility';
 
 var utility = {
 

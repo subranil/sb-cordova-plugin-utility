@@ -6,8 +6,8 @@
     <description></description>
     <license>MIT</license>
     <keywords></keywords>
-    <js-module src="www/plugin.js" name="UTILITY">
-        <clobbers target="utility" />
+    <js-module src="www/plugin.js" name="SBUTILITY">
+        <clobbers target="sbutility" />
     </js-module>
     
     <!-- android -->
