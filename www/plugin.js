@@ -2,7 +2,7 @@ var exec = require('cordova/exec');
 
 var PLUGIN_NAME = 'sbutility';
 
-var utility = {
+var sbutility = {
 
     getBuildConfigValue: function(package, property, success, error) {
         exec(success, error, PLUGIN_NAME, "getBuildConfigValue", [package,property]);
@@ -78,4 +78,4 @@ var utility = {
 };
 
 
-module.exports = buildconfigreader;
+module.exports = sbutility;
