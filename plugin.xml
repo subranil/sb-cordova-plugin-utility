@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+    id="sb-cordova-plugin-utility"
+    version="0.0.1">
+    <name>A native  plugin for utilty methods supported by Sunbird App</name>
+    <description></description>
+    <license>MIT</license>
+    <keywords></keywords>
+    <js-module src="www/plugin.js" name="UTILITY">
+        <clobbers target="utility" />
+    </js-module>
+    
+    <!-- android -->
+    <platform name="android">
+
+      <config-file target="res/xml/config.xml" parent="/*">
+        <feature name="utility">
+          <param name="android-package" value="org.sunbird.config.UtilityPlugin" />
+          <param name="onload" value="true" />
+        </feature>
+      </config-file>
+
+        <config-file target="AndroidManifest.xml" parent="application">
+            <receiver
+            android:name="org.sunbird.utm.ReferrerReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.android.vending.INSTALL_REFERRER" />
+            </intent-filter>
+        </receiver>
+        </config-file>
+
+      <source-file src="src/android/org/sunbird/config/UtilityPlugin.java" target-dir="src/org/sunbird/config" />
+      <source-file src="src/android/org/sunbird/config/ReflectionUtil.java" target-dir="src/org/sunbird/config" />
+      <source-file src="src/android/org/sunbird/config/FileUtil.java" target-dir="src/org/sunbird/config" />
+      <source-file src="src/android/org/sunbird/config/BuildConfigUtil.java" target-dir="src/org/sunbird/config" />
+      <source-file src="src/android/org/sunbird/config/CryptoUtil.java" target-dir="src/org/sunbird/config" />
+      <source-file src="src/android/org/sunbird/config/DeviceSpecGenerator.java" target-dir="src/org/sunbird/config" />
+      <source-file src="src/android/org/sunbird/utm/ReferrerReceiver.java" target-dir="src/org/sunbird/utm" />
+       <source-file src="src/android/org/sunbird/storage/StorageUtil.java" target-dir="src/org/sunbird/storage" />
+
+    </platform>
+
+    <platform name="browser">
+        <config-file target="config.xml" parent="/*">
+            <feature name="DB">
+                <param name="browser-package" value="utility" />
+            </feature>
+        </config-file>
+        <js-module src="src/browser/DBProxy.js" name="DBProxy">
+            <runs/>
+        </js-module>
+    </platform>
+</plugin>
+
