@@ -6,15 +6,15 @@
     <description></description>
     <license>MIT</license>
     <keywords></keywords>
-    <js-module src="www/plugin.js" name="UTILITY">
-        <clobbers target="utility" />
+    <js-module src="www/plugin.js" name="SBUTILITY">
+        <clobbers target="sbutility" />
     </js-module>
     
     <!-- android -->
     <platform name="android">
 
       <config-file target="res/xml/config.xml" parent="/*">
-        <feature name="utility">
+        <feature name="sbutility">
           <param name="android-package" value="org.sunbird.config.UtilityPlugin" />
           <param name="onload" value="true" />
         </feature>
