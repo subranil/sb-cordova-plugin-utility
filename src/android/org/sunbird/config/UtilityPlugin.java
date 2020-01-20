@@ -17,6 +17,8 @@ import org.apache.cordova.CordovaPlugin;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.sunbird.utm.InstallReferrerListener;
+import org.sunbird.utm.PlayStoreInstallReferrer;
 import org.sunbird.storage.StorageUtil;
 import org.sunbird.utm.ReferrerReceiver;
 
@@ -26,6 +28,7 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * This class echoes a string called from JavaScript.
@@ -346,13 +349,18 @@ public class UtilityPlugin extends CordovaPlugin {
 
     private static void getUtmInfo(CordovaInterface cordova, CallbackContext callbackContext)  {
         try {
-            SharedPreferences sharedPreferences = cordova.getActivity().getSharedPreferences(ReferrerReceiver.PREFS_FILE_NAME, Context.MODE_PRIVATE);
-            String utmParameter = sharedPreferences.getString("utm_data", null);
-            if(utmParameter != null) {
-                callbackContext.success(new JSONObject(utmParameter));
-            } else {
-                callbackContext.success("");
-            }
+            PlayStoreInstallReferrer playStoreInstallreferrer = new PlayStoreInstallReferrer();
+            playStoreInstallreferrer.start(cordova.getActivity(), new InstallReferrerListener() {
+                @Override
+                public void onHandlerReferrer(Map<String, String> properties) {
+                    SharedPreferences storage = context.getSharedPreferences(
+                            UtilityPlugin.PREFS_FILE_NAME, Context.MODE_PRIVATE);
+                    SharedPreferences.Editor editor = storage.edit();
+                    editor.putString("utm_data", referrerInfo.toString());
+                    editor.commit();
+                    callbackContext.success(new JSONObject(properties));
+                }
+            });
 
         } catch (Exception e) {
             callbackContext.error(e.getMessage());
