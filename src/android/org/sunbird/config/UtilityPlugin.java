@@ -21,8 +21,6 @@ import org.json.JSONObject;
 import org.sunbird.utm.InstallReferrerListener;
 import org.sunbird.utm.PlayStoreInstallReferrer;
 import org.sunbird.storage.StorageUtil;
-import org.sunbird.utm.ReferrerReceiver;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -88,6 +86,7 @@ public class UtilityPlugin extends CordovaPlugin {
         }else if (action.equalsIgnoreCase("getUtmInfo")) {
 
             getUtmInfo(cordova, callbackContext);
+            return true;
         }else if (action.equalsIgnoreCase("clearUtmInfo")) {
 
             clearUtmInfo(cordova, callbackContext);

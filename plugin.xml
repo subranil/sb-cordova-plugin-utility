@@ -27,7 +27,6 @@
       <source-file src="src/android/org/sunbird/config/BuildConfigUtil.java" target-dir="src/org/sunbird/config" />
       <source-file src="src/android/org/sunbird/config/CryptoUtil.java" target-dir="src/org/sunbird/config" />
       <source-file src="src/android/org/sunbird/config/DeviceSpecGenerator.java" target-dir="src/org/sunbird/config" />
-      <source-file src="src/android/org/sunbird/utm/ReferrerReceiver.java" target-dir="src/org/sunbird/utm" />
        <source-file src="src/android/org/sunbird/storage/StorageUtil.java" target-dir="src/org/sunbird/storage" />
         <source-file src="src/android/org/sunbird/utm/PlayStoreInstallReferrer.java" target-dir="src/org/sunbird/utm" />
         <source-file src="src/android/org/sunbird/utm/InstallReferrerListener.java" target-dir="src/org/sunbird/utm" />
