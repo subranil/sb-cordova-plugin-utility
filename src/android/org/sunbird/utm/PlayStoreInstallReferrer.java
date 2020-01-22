@@ -65,7 +65,7 @@ public class PlayStoreInstallReferrer implements InstallReferrerStateListener {
     }
 
     private void handleReferrer(@Nullable ReferrerDetails response, int responseCode) {
-        if (!response.getInstallReferrer().contains("google-play")) {
+       // if (!response.getInstallReferrer().contains("google-play")) {
             Map reffererMap = new HashMap();
             reffererMap.put("code", String.valueOf(responseCode));
             if (response != null) {
@@ -80,7 +80,7 @@ public class PlayStoreInstallReferrer implements InstallReferrerStateListener {
             if (this.mInstallReferrerListener != null) {
                 this.mInstallReferrerListener.onHandlerReferrer(reffererMap);
             }
-        }
+     //   }
 
     }
 }

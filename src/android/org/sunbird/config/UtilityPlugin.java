@@ -10,6 +10,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.text.TextUtils;
+import android.util.Log;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaInterface;
@@ -34,6 +35,8 @@ import java.util.Map;
  * This class echoes a string called from JavaScript.
  */
 public class UtilityPlugin extends CordovaPlugin {
+
+    private static final String SHARED_PREFERENCES_NAME = "org.ekstep.genieservices.preference_file";
 
 
     @Override
@@ -353,10 +356,12 @@ public class UtilityPlugin extends CordovaPlugin {
             playStoreInstallreferrer.start(cordova.getActivity(), new InstallReferrerListener() {
                 @Override
                 public void onHandlerReferrer(Map<String, String> properties) {
-                    SharedPreferences storage = context.getSharedPreferences(
-                            UtilityPlugin.PREFS_FILE_NAME, Context.MODE_PRIVATE);
-                    SharedPreferences.Editor editor = storage.edit();
-                    editor.putString("utm_data", referrerInfo.toString());
+                    SharedPreferences sharedPreferences = cordova.getActivity().getSharedPreferences(UtilityPlugin.SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE);
+                    SharedPreferences.Editor editor = sharedPreferences.edit();
+                    String utmData = sharedPreferences.getString("utm_data", "");
+                    if(!(utmData.contains("status"))) {
+                        editor.putString("utm_data", String.valueOf((new JSONObject(properties))));
+                    }
                     editor.commit();
                     callbackContext.success(new JSONObject(properties));
                 }
@@ -370,9 +375,10 @@ public class UtilityPlugin extends CordovaPlugin {
 
     private static void clearUtmInfo(CordovaInterface cordova, CallbackContext callbackContext)  {
         try {
-            SharedPreferences sharedPreferences = cordova.getActivity().getSharedPreferences(ReferrerReceiver.PREFS_FILE_NAME, Context.MODE_PRIVATE);
+            SharedPreferences sharedPreferences = cordova.getActivity().getSharedPreferences(UtilityPlugin.SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.clear();
+            JSONObject utmSourceData = new JSONObject(sharedPreferences.getString("utm_data", "")).put("status", 1);
+            editor.putString("utm_data", String.valueOf(utmSourceData));
             editor.commit();
             callbackContext.success();
         } catch (Exception e) {
