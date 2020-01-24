@@ -10,6 +10,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.text.TextUtils;
+import android.util.Log;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaInterface;
@@ -17,20 +18,23 @@ import org.apache.cordova.CordovaPlugin;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.sunbird.utm.InstallReferrerListener;
+import org.sunbird.utm.PlayStoreInstallReferrer;
 import org.sunbird.storage.StorageUtil;
-import org.sunbird.utm.ReferrerReceiver;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * This class echoes a string called from JavaScript.
  */
 public class UtilityPlugin extends CordovaPlugin {
+
+    private static final String SHARED_PREFERENCES_NAME = "org.ekstep.genieservices.preference_file";
 
 
     @Override
@@ -82,6 +86,7 @@ public class UtilityPlugin extends CordovaPlugin {
         }else if (action.equalsIgnoreCase("getUtmInfo")) {
 
             getUtmInfo(cordova, callbackContext);
+            return true;
         }else if (action.equalsIgnoreCase("clearUtmInfo")) {
 
             clearUtmInfo(cordova, callbackContext);
@@ -346,25 +351,35 @@ public class UtilityPlugin extends CordovaPlugin {
 
     private static void getUtmInfo(CordovaInterface cordova, CallbackContext callbackContext)  {
         try {
-            SharedPreferences sharedPreferences = cordova.getActivity().getSharedPreferences(ReferrerReceiver.PREFS_FILE_NAME, Context.MODE_PRIVATE);
-            String utmParameter = sharedPreferences.getString("utm_data", null);
-            if(utmParameter != null) {
-                callbackContext.success(new JSONObject(utmParameter));
+            SharedPreferences splashSharedPreferences = cordova.getActivity().getSharedPreferences(UtilityPlugin.SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE);
+            boolean isFirstTime = splashSharedPreferences.getBoolean("installed_referrer_api", true);
+            if (isFirstTime) {
+                PlayStoreInstallReferrer playStoreInstallreferrer = new PlayStoreInstallReferrer();
+                playStoreInstallreferrer.start(cordova.getActivity(), new InstallReferrerListener() {
+                    @Override
+                    public void onHandlerReferrer(Map<String, String> properties) {
+                        SharedPreferences sharedPreferences = cordova.getActivity().getSharedPreferences(UtilityPlugin.SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE);
+                        SharedPreferences.Editor editor = sharedPreferences.edit();
+                        editor.putString("utm_data", String.valueOf((new JSONObject(properties))));
+
+                        callbackContext.success(new JSONObject(properties));
+                        splashSharedPreferences.edit().putBoolean("installed_referrer_api", false).apply();
+                        editor.commit();
+                    }
+                });
             } else {
                 callbackContext.success("");
             }
-
         } catch (Exception e) {
-            callbackContext.error(e.getMessage());
-        }
+                callbackContext.error(e.getMessage());
+            }
 
     }
 
     private static void clearUtmInfo(CordovaInterface cordova, CallbackContext callbackContext)  {
         try {
-            SharedPreferences sharedPreferences = cordova.getActivity().getSharedPreferences(ReferrerReceiver.PREFS_FILE_NAME, Context.MODE_PRIVATE);
+            SharedPreferences sharedPreferences = cordova.getActivity().getSharedPreferences(UtilityPlugin.SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.clear();
             editor.commit();
             callbackContext.success();
         } catch (Exception e) {

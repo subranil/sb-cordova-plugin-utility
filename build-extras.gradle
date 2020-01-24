@@ -1,0 +1,8 @@
+repositories {
+    google()
+    jcenter()
+}
+
+dependencies {
+    implementation 'com.android.installreferrer:installreferrer:1.1'
+}
