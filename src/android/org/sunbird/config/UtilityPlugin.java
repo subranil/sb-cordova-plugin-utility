@@ -351,24 +351,28 @@ public class UtilityPlugin extends CordovaPlugin {
 
     private static void getUtmInfo(CordovaInterface cordova, CallbackContext callbackContext)  {
         try {
-            PlayStoreInstallReferrer playStoreInstallreferrer = new PlayStoreInstallReferrer();
-            playStoreInstallreferrer.start(cordova.getActivity(), new InstallReferrerListener() {
-                @Override
-                public void onHandlerReferrer(Map<String, String> properties) {
-                    SharedPreferences sharedPreferences = cordova.getActivity().getSharedPreferences(UtilityPlugin.SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE);
-                    SharedPreferences.Editor editor = sharedPreferences.edit();
-                    String utmData = sharedPreferences.getString("utm_data", "");
-                    if(!(utmData.contains("status"))) {
+            SharedPreferences splashSharedPreferences = cordova.getActivity().getSharedPreferences(UtilityPlugin.SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE);
+            boolean isFirstTime = splashSharedPreferences.getBoolean("installed_referrer_api", true);
+            if (isFirstTime) {
+                PlayStoreInstallReferrer playStoreInstallreferrer = new PlayStoreInstallReferrer();
+                playStoreInstallreferrer.start(cordova.getActivity(), new InstallReferrerListener() {
+                    @Override
+                    public void onHandlerReferrer(Map<String, String> properties) {
+                        SharedPreferences sharedPreferences = cordova.getActivity().getSharedPreferences(UtilityPlugin.SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE);
+                        SharedPreferences.Editor editor = sharedPreferences.edit();
                         editor.putString("utm_data", String.valueOf((new JSONObject(properties))));
-                    }
-                    editor.commit();
-                    callbackContext.success(new JSONObject(properties));
-                }
-            });
 
+                        callbackContext.success(new JSONObject(properties));
+                        splashSharedPreferences.edit().putBoolean("installed_referrer_api", false).apply();
+                        editor.commit();
+                    }
+                });
+            } else {
+                callbackContext.success("");
+            }
         } catch (Exception e) {
-            callbackContext.error(e.getMessage());
-        }
+                callbackContext.error(e.getMessage());
+            }
 
     }
 
@@ -376,8 +380,6 @@ public class UtilityPlugin extends CordovaPlugin {
         try {
             SharedPreferences sharedPreferences = cordova.getActivity().getSharedPreferences(UtilityPlugin.SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = sharedPreferences.edit();
-            JSONObject utmSourceData = new JSONObject(sharedPreferences.getString("utm_data", "")).put("status", 1);
-            editor.putString("utm_data", String.valueOf(utmSourceData));
             editor.commit();
             callbackContext.success();
         } catch (Exception e) {
