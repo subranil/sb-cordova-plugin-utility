@@ -230,7 +230,7 @@ public class UtilityPlugin extends CordovaPlugin {
             // Get application's name and convert to lowercase
             tempFile = new File(tempFile.getPath() + "/"
                     + cordova.getActivity().getString(getIdOfResource(cordova, "_app_name", "string")) + "_"
-                    + BuildConfigUtil.getBuildConfigValue("org.sunbird.app", "VERSION_NAME").toString().replace(".","_") + ".apk");
+                    + BuildConfigUtil.getBuildConfigValue("org.sunbird.app", "REAL_VERSION_NAME").toString().replace(".","_") + ".apk");
             // If file doesn't exists create new
             if (!tempFile.exists()) {
                 if (!tempFile.createNewFile()) {
