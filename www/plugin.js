@@ -30,8 +30,8 @@ var sbutility = {
     getDownloadDirectoryPath: function(success,error) {
         exec(success, error, PLUGIN_NAME, "getDownloadDirectoryPath", ["getDownloadDirectoryPath"]);
     },
-    exportApk: function (onSuccess, onError) {
-        exec(onSuccess, onError, PLUGIN_NAME, "exportApk", ["exportApk"]);
+    exportApk: function (destination, onSuccess, onError) {
+        exec(onSuccess, onError, PLUGIN_NAME, "exportApk", ["exportApk", destination]);
     },
     getDeviceSpec: function (onSuccess, onError) {
         exec(onSuccess, onError, PLUGIN_NAME, "getDeviceSpec", ["getDeviceSpec"]);
@@ -75,6 +75,9 @@ var sbutility = {
     copyFile: function (sourceDirectory, destinationDirectory, fileName, onSuccess, onError) {
         exec(onSuccess, onError, PLUGIN_NAME, "copyFile", ["copyDirectory",sourceDirectory, destinationDirectory, fileName]);
     },
+    getApkSize: function (onSuccess, onError) {
+        exec(onSuccess, onError, PLUGIN_NAME, "getApkSize", ["getApkSize"]);
+    }
 };
 
 
