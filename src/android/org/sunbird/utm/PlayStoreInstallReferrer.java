@@ -45,7 +45,6 @@ public class PlayStoreInstallReferrer implements InstallReferrerStateListener {
                     Log.e("InstallReferrer referrerUrl: ", referrerUrl);
                     mReferrerClient.endConnection();
                 } catch (RemoteException e) {
-                    Log.e("error install referrer", e.getMessage());
                 }
                 break;
             case InstallReferrerClient.InstallReferrerResponse.FEATURE_NOT_SUPPORTED:
