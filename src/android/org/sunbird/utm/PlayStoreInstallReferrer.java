@@ -10,6 +10,12 @@ import com.android.installreferrer.api.InstallReferrerClient;
 import com.android.installreferrer.api.InstallReferrerStateListener;
 import com.android.installreferrer.api.ReferrerDetails;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URL;
+import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -69,7 +75,11 @@ public class PlayStoreInstallReferrer implements InstallReferrerStateListener {
             reffererMap.put("code", String.valueOf(responseCode));
             if (response != null) {
                 if (response.getInstallReferrer() != null) {
-                    reffererMap.put("val", response.getInstallReferrer());
+                    try {
+                        reffererMap.put("val", this.splitQuery(new URL("https://mock.com?" + response.getInstallReferrer())));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
 
                 reffererMap.put("clk", Long.toString(response.getReferrerClickTimestampSeconds()));
@@ -82,5 +92,29 @@ public class PlayStoreInstallReferrer implements InstallReferrerStateListener {
 
         }
 
+    }
+
+    public JSONArray splitQuery(URL url) throws UnsupportedEncodingException {
+        JSONArray utmParams = new JSONArray();
+        String query = url.getQuery();
+        String[] pairs = query.split("&");
+        for (String pair : pairs) {
+            JSONObject utmObject = new JSONObject();
+            int idx = pair.indexOf("=");
+            String name = URLDecoder.decode(pair.substring(0, idx), "UTF-8");
+            if (name.contains("_")) {
+                int i = name.indexOf("_");
+                name = name.replace("_", "");
+                name = name.substring(0, 1).toUpperCase() + name.substring(1, i) + name.substring(i, i + 1).toUpperCase() + name.substring(i + 1);
+            }
+            String value = URLDecoder.decode(pair.substring(idx + 1), "UTF-8");
+            try {
+                utmObject.put("id", name);
+                utmObject.put("type", value);
+                utmParams.put(utmObject);
+            } catch (Exception e) {
+            }
+        }
+        return utmParams;
     }
 }
