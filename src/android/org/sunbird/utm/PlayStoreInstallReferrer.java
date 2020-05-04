@@ -109,8 +109,8 @@ public class PlayStoreInstallReferrer implements InstallReferrerStateListener {
             }
             String value = URLDecoder.decode(pair.substring(idx + 1), "UTF-8");
             try {
-                campaignObject.put("id", name);
-                campaignObject.put("type", value);
+                campaignObject.put("type", name);
+                campaignObject.put("id", value);
                 campaignParams.put(campaignObject);
             } catch (Exception e) {
             }
