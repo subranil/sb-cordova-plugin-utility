@@ -95,11 +95,11 @@ public class PlayStoreInstallReferrer implements InstallReferrerStateListener {
     }
 
     public JSONArray splitQuery(URL url) throws UnsupportedEncodingException {
-        JSONArray utmParams = new JSONArray();
+        JSONArray campaignParams = new JSONArray();
         String query = url.getQuery();
         String[] pairs = query.split("&");
         for (String pair : pairs) {
-            JSONObject utmObject = new JSONObject();
+            JSONObject campaignObject = new JSONObject();
             int idx = pair.indexOf("=");
             String name = URLDecoder.decode(pair.substring(0, idx), "UTF-8");
             if (name.contains("_")) {
@@ -109,12 +109,12 @@ public class PlayStoreInstallReferrer implements InstallReferrerStateListener {
             }
             String value = URLDecoder.decode(pair.substring(idx + 1), "UTF-8");
             try {
-                utmObject.put("id", name);
-                utmObject.put("type", value);
-                utmParams.put(utmObject);
+                campaignObject.put("id", name);
+                campaignObject.put("type", value);
+                campaignParams.put(campaignObject);
             } catch (Exception e) {
             }
         }
-        return utmParams;
+        return campaignParams;
     }
 }
