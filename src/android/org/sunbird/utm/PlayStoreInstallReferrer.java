@@ -1,7 +1,6 @@
 package org.sunbird.utm;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.os.RemoteException;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -102,17 +101,26 @@ public class PlayStoreInstallReferrer implements InstallReferrerStateListener {
             JSONObject campaignObject = new JSONObject();
             int idx = pair.indexOf("=");
             String name = URLDecoder.decode(pair.substring(0, idx), "UTF-8");
-            if (name.contains("_")) {
-                int i = name.indexOf("_");
-                name = name.replace("_", "");
-                name = name.substring(0, 1).toUpperCase() + name.substring(1, i) + name.substring(i, i + 1).toUpperCase() + name.substring(i + 1);
-            }
             String value = URLDecoder.decode(pair.substring(idx + 1), "UTF-8");
-            try {
-                campaignObject.put("id", value);
-                campaignObject.put("type", name);
-                campaignParams.put(campaignObject);
-            } catch (Exception e) {
+            if (name.equals("utm_campaign") || name.equals("channel")) {
+                try {
+                    campaignObject.put("id", value);
+                    campaignObject.put("type", "Source");
+                    campaignParams.put(campaignObject);
+                } catch (Exception e) {
+                }
+            } else {
+                if (name.contains("_")) {
+                    int i = name.indexOf("_");
+                    name = name.replace("_", "");
+                    name = name.substring(0, 1).toUpperCase() + name.substring(1, i) + name.substring(i, i + 1).toUpperCase() + name.substring(i + 1);
+                }
+                try {
+                    campaignObject.put("id", value);
+                    campaignObject.put("type", name);
+                    campaignParams.put(campaignObject);
+                } catch (Exception e) {
+                }
             }
         }
         return campaignParams;
