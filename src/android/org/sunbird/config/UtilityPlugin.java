@@ -360,7 +360,7 @@ public class UtilityPlugin extends CordovaPlugin {
                     public void onHandlerReferrer(Map<String, String> properties) {
                         SharedPreferences sharedPreferences = cordova.getActivity().getSharedPreferences(UtilityPlugin.SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE);
                         SharedPreferences.Editor editor = sharedPreferences.edit();
-                        editor.putString("utm_data", String.valueOf((new JSONObject(properties))));
+                        editor.putString("campaign_parameters", String.valueOf((new JSONObject(properties))));
 
                         callbackContext.success(new JSONObject(properties));
                         splashSharedPreferences.edit().putBoolean("installed_referrer_api", false).apply();
@@ -380,6 +380,7 @@ public class UtilityPlugin extends CordovaPlugin {
         try {
             SharedPreferences sharedPreferences = cordova.getActivity().getSharedPreferences(UtilityPlugin.SHARED_PREFERENCES_NAME, Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.remove("campaign_parameters");
             editor.commit();
             callbackContext.success();
         } catch (Exception e) {
