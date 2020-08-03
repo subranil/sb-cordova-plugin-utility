@@ -12,6 +12,13 @@ import android.os.Environment;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.common.api.CommonStatusCodes;
+import com.google.android.gms.safetynet.SafetyNet;
+import com.google.android.gms.safetynet.SafetyNetApi;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
@@ -115,6 +122,9 @@ public class UtilityPlugin extends CordovaPlugin {
             return true;
         }else if (action.equalsIgnoreCase("getApkSize")) {
             getApkSize(cordova, callbackContext);
+            return true;
+        }else if (action.equalsIgnoreCase("verifyCaptcha")) {
+            verifyCaptcha(args, callbackContext);
             return true;
         }
 
@@ -508,5 +518,56 @@ public class UtilityPlugin extends CordovaPlugin {
                 }
             }
         });
+    }
+
+    private void verifyCaptcha(JSONArray args, CallbackContext callbackContext) {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    String apiKey = args.getString(1);
+                    verify(apiKey, callbackContext);
+                } catch (Exception e) {
+                    callbackContext.error(e.getMessage());
+                }
+            }
+        });
+    }
+
+    private void verify(String apiKey, CallbackContext callbackContext) {
+        if (apiKey.length() > 0) {
+            SafetyNet.getClient(cordova.getActivity())
+                    .verifyWithRecaptcha(apiKey)
+                    .addOnSuccessListener(cordova.getActivity(),
+                            new OnSuccessListener<SafetyNetApi.RecaptchaTokenResponse>() {
+                                @Override
+                                public void onSuccess(SafetyNetApi.RecaptchaTokenResponse response) {
+                                    String userResponseToken = response.getTokenResult();
+                                    if (!userResponseToken.isEmpty()) {
+                                        callbackContext.success(userResponseToken);
+                                    } else {
+                                        callbackContext.error("Repsonse token was empty.");
+                                    }
+                                }
+                            })
+                    .addOnFailureListener(cordova.getActivity(),
+                            new OnFailureListener() {
+                                @Override
+                                public void onFailure(@NonNull Exception e) {
+                                    if (e instanceof ApiException) {
+                                        // An error we know about occurred.
+                                        ApiException apiException = (ApiException) e;
+                                        int statusCode = apiException.getStatusCode();
+                                        String message = CommonStatusCodes.getStatusCodeString(statusCode);
+                                        callbackContext.error(message);
+                                    } else {
+                                        // A different, unknown type of error occurred.
+                                        callbackContext.error(e.getMessage());
+                                    }
+                                }
+                            });
+
+        } else {
+            callbackContext.error("Verify called without providing a Site Key");
+        }
     }
 }
