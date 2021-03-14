@@ -5,9 +5,11 @@ import android.os.Build;
 import android.os.Environment;
 import android.os.StatFs;
 import android.os.storage.StorageManager;
-import android.support.v4.content.ContextCompat;
-import android.support.v4.os.EnvironmentCompat;
+import android.os.storage.StorageVolume;
 import android.util.Log;
+
+import androidx.core.content.ContextCompat;
+import androidx.core.os.EnvironmentCompat;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -15,6 +17,7 @@ import org.json.JSONObject;
 import java.io.File;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
+import java.util.List;
 
 /**
  * Created by swayangjit on 9/6/19.
@@ -39,7 +42,18 @@ public class StorageUtil {
         try {
             final Method getVolumeList = storageManager.getClass().getMethod(METHOD_GET_VOLUME_LIST);
             final Class<?> storageValumeClazz = Class.forName(CLASS_GET_VOLUME_LIST);
-            final Method getPath = storageValumeClazz.getMethod(METHOD_GET_PATH);
+            List<StorageVolume> storageVolumes = null;
+            String path;
+            File file = null;
+            Method getPath = null;
+            if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                storageVolumes = storageManager.getStorageVolumes();
+                for (StorageVolume volumes : storageVolumes) {
+                    file = volumes.getDirectory();
+                }
+            } else {
+                getPath = storageValumeClazz.getMethod(METHOD_GET_PATH);
+            }
             Method isRemovable = storageValumeClazz.getMethod(METHOD_IS_REMOVABLE);
             Method mGetState = null;
             if (Build.VERSION.SDK_INT > Build.VERSION_CODES.KITKAT) {
@@ -55,7 +69,11 @@ public class StorageUtil {
             JSONArray storageList = new JSONArray();
             for (int i = 0; i < length; i++) {
                 final Object storageVolume = Array.get(invokeVolumeList, i);
-                final String path = (String) getPath.invoke(storageVolume);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    path = file.getAbsolutePath();
+                } else {
+                    path = (String) getPath.invoke(storageVolume);
+                }
                 final boolean removable = (Boolean) isRemovable.invoke(storageVolume);
                 String state = null;
                 if (mGetState != null) {
