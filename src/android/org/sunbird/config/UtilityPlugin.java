@@ -16,12 +16,20 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.text.Html;
 import android.text.TextUtils;
+import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.webkit.MimeTypeMap;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.common.api.CommonStatusCodes;
+import com.google.android.gms.safetynet.SafetyNet;
+import com.google.android.gms.safetynet.SafetyNetApi;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaInterface;
@@ -31,7 +39,6 @@ import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.sunbird.storage.StorageUtil;
 import org.sunbird.utm.InstallReferrerListener;
 import org.sunbird.utm.PlayStoreInstallReferrer;
 import org.sunbird.storage.StorageUtil;
@@ -57,6 +64,108 @@ public class UtilityPlugin extends CordovaPlugin {
 
     private static final String SHARED_PREFERENCES_NAME = "org.ekstep.genieservices.preference_file";
     private CallbackContext onActivityResultCallbackContext = null;
+
+
+    @Override
+    public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
+        if (action.equals("getBuildConfigValue")) {
+            this.getBuildConfigParam(args, callbackContext);
+            return true;
+        } else if (action.equals("rm")) {
+            this.removeDirectory(args, callbackContext);
+            return true;
+        } else if (action.equalsIgnoreCase("openPlayStore")) {
+            String appId = args.getString(1);
+            openGooglePlay(cordova, appId);
+            callbackContext.success();
+
+        } else if (action.equalsIgnoreCase("getDeviceAPILevel")) {
+            getDeviceAPILevel(callbackContext);
+
+        } else if (action.equalsIgnoreCase("checkAppAvailability")) {
+            checkAppAvailability(cordova, args, callbackContext);
+
+        } else if (action.equalsIgnoreCase("getDownloadDirectoryPath")) {
+            getDownloadDirectoryPath(callbackContext);
+
+        }else if (action.equalsIgnoreCase("exportApk")) {
+            exportApk(args, cordova,callbackContext);
+
+        }else if (action.equalsIgnoreCase("getBuildConfigValues")) {
+
+            getBuildConfigValues(args,callbackContext);
+        }else if (action.equalsIgnoreCase("getDeviceSpec")) {
+            try {
+                callbackContext.success(new DeviceSpecGenerator().getDeviceSpec(cordova.getActivity()));
+            } catch (Exception e) {
+                callbackContext.error(e.getMessage());
+            }
+        }else if (action.equalsIgnoreCase("createDirectories")) {
+
+            createDirectories(args,callbackContext);
+        }else if (action.equalsIgnoreCase("writeFile")) {
+
+            writeFile(args,callbackContext);
+        }else if (action.equalsIgnoreCase("getMetaData")) {
+
+            getMetaData(args,callbackContext);
+        }else if (action.equalsIgnoreCase("getAvailableInternalMemorySize")) {
+
+            getAvailableInternalMemorySize(callbackContext);
+        }else if (action.equalsIgnoreCase("getUtmInfo")) {
+
+            getUtmInfo(cordova, callbackContext);
+            return true;
+        }else if (action.equalsIgnoreCase("clearUtmInfo")) {
+
+            clearUtmInfo(cordova, callbackContext);
+        }else if (action.equalsIgnoreCase("getStorageVolumes")) {
+
+            getStorageVolumes(cordova, callbackContext);
+        }else if (action.equalsIgnoreCase("copyDirectory")) {
+
+            copyDirectory(args, callbackContext);
+            return true;
+        }else if (action.equalsIgnoreCase("renameDirectory")) {
+
+            renameDirectory(args, callbackContext);
+        }else if (action.equalsIgnoreCase("canWrite")) {
+
+            canWrite(args, callbackContext);
+        }else if (action.equalsIgnoreCase("getFreeUsableSpace")) {
+
+            getUsableSpace(args, callbackContext);
+        }else if (action.equalsIgnoreCase("readFromAssets")) {
+
+            readFromAssets(args, callbackContext);
+            return true;
+        }else if (action.equalsIgnoreCase("copyFile")) {
+            copyFile(args, callbackContext);
+            return true;
+        }else if (action.equalsIgnoreCase("getApkSize")) {
+            getApkSize(cordova, callbackContext);
+            return true;
+        }else if (action.equalsIgnoreCase("verifyCaptcha")) {
+            verifyCaptcha(args, callbackContext);
+            return true;
+        }else if (action.equalsIgnoreCase("getAvailableAppLists")) {
+            getAvailableAppLists(cordova, callbackContext, args.getJSONArray(0));
+            return true;
+        } else if (action.equalsIgnoreCase("startActivityForResult")) {
+            if (args.length() != 1) {
+                callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.INVALID_ACTION));
+                return false;
+            }
+            JSONObject object = args.getJSONObject(0);
+            Intent intent = populateIntent(object, callbackContext);
+            int requestCode = object.has("requestCode") ? object.getInt("requestCode") : 1;
+            this.onActivityResultCallbackContext = callbackContext;
+            startActivity(intent, requestCode, callbackContext);
+            return true;
+        }
+
+        return false;
+    }
 
     /**
      * Open the appId details on Google Play .
@@ -202,7 +311,7 @@ public class UtilityPlugin extends CordovaPlugin {
             callbackContext.error(ex.getMessage());
         }
     }
-    
+
     private static void createDirectories( JSONArray args, CallbackContext callbackContext)  {
         try {
 
@@ -246,7 +355,7 @@ public class UtilityPlugin extends CordovaPlugin {
 
     }
 
-     private static void getMetaData( JSONArray args, CallbackContext callbackContext)  {
+    private static void getMetaData( JSONArray args, CallbackContext callbackContext)  {
         try {
 
             JSONArray inputArray = args.getJSONArray(1);
@@ -308,8 +417,8 @@ public class UtilityPlugin extends CordovaPlugin {
                 callbackContext.success("");
             }
         } catch (Exception e) {
-                callbackContext.error(e.getMessage());
-            }
+            callbackContext.error(e.getMessage());
+        }
 
     }
 
@@ -326,7 +435,36 @@ public class UtilityPlugin extends CordovaPlugin {
 
     }
 
-    private static void getStorageVolumes(CordovaInterface cordova, CallbackContext callbackContext) {
+    private void removeDirectory(JSONArray args, CallbackContext callbackContext){
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    FileUtil.rm(new File(args.getString(0).replace("file://", "")), args.getString(1));
+                    callbackContext.success();
+                } catch (Exception e) {
+                    callbackContext.error("Error while deleting");
+                }
+            }
+        });
+    }
+
+    private void copyDirectory(JSONArray args, CallbackContext callbackContext) {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    String sourceDirectory = args.getString(1).replace("file://", "");
+                    String destinationDirectory = args.getString(2).replace("file://", "");
+                    FileUtil.copyFolder(new File(sourceDirectory), new File(destinationDirectory));
+                    callbackContext.success();
+                } catch (Exception e) {
+                    callbackContext.error(e.getMessage());
+                }
+            }
+        });
+
+
+    }
+    private static void getStorageVolumes(CordovaInterface cordova, CallbackContext callbackContext)  {
         try {
             callbackContext.success(StorageUtil.getStorageVolumes(cordova.getContext()));
         } catch (Exception e) {
@@ -347,23 +485,23 @@ public class UtilityPlugin extends CordovaPlugin {
 
     }
 
-     private static void canWrite(JSONArray args, CallbackContext callbackContext)  {
+    private static void canWrite(JSONArray args, CallbackContext callbackContext)  {
         try {
             String directory = args.getString(1).replace("file://", "");
             boolean canWrite = new File(directory).canWrite();
             if(canWrite){
                 callbackContext.success();
             }else{
-                callbackContext.error("Can't write to the folder"); 
+                callbackContext.error("Can't write to the folder");
             }
-           
+
         } catch (Exception e) {
             callbackContext.error(e.getMessage());
         }
 
     }
 
-    private static void getUsableSpace(JSONArray args, CallbackContext callbackContext) {
+    private static void getUsableSpace(JSONArray args, CallbackContext callbackContext)  {
         try {
             String directory = args.getString(1).replace("file://", "");
             long freeUsableSpace = FileUtil.getFreeUsableSpace(new File(directory));
@@ -374,175 +512,121 @@ public class UtilityPlugin extends CordovaPlugin {
 
     }
 
-    private static JSONObject toJsonObject(Bundle bundle) {
-        //  Credit: https://github.com/napolitano/cordova-plugin-intent
-        try {
-            return (JSONObject) toJsonValue(bundle);
-        } catch (JSONException e) {
-            throw new IllegalArgumentException("Cannot convert bundle to JSON: " + e.getMessage(), e);
-        }
+    private  void readFromAssets(JSONArray args, CallbackContext callbackContext)  {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    String fileName = args.getString(1).replace("file:///android_asset/","");
+                    String output = FileUtil.readFileFromAssets(cordova.getActivity().getAssets().open(fileName));
+                    if(output != null){
+                        callbackContext.success(output);
+                    }else{
+                        callbackContext.error(0);
+                    }
+
+                } catch (Exception e) {
+                    e.getMessage();
+                    callbackContext.error(e.getMessage());
+                }
+
+            }
+        });
+
     }
 
-    private static Object toJsonValue(final Object value) throws JSONException {
-        //  Credit: https://github.com/napolitano/cordova-plugin-intent
-        if (value == null) {
-            return null;
-        } else if (value instanceof Bundle) {
-            final Bundle bundle = (Bundle) value;
-            final JSONObject result = new JSONObject();
-            for (final String key : bundle.keySet()) {
-                result.put(key, toJsonValue(bundle.get(key)));
+    private  void copyFile(JSONArray args, CallbackContext callbackContext)  {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    String sourcePath = args.getString(1).replace("file://", "");
+                    String destinationPath = args.getString(2).replace("file://", "");
+                    String fileName = args.getString(3);
+                    File source = new File(sourcePath, fileName);
+                    if (source.exists()) {
+                        File dest = new File(destinationPath, fileName);
+                        dest.getParentFile().mkdirs();
+
+                        FileUtil.cp(source, dest);
+                    }
+                    callbackContext.success();
+                } catch (Exception e) {
+                    callbackContext.error(e.getMessage());
+                }
             }
-            return result;
-        } else if ((value.getClass().isArray())) {
-            final JSONArray result = new JSONArray();
-            int length = Array.getLength(value);
-            for (int i = 0; i < length; ++i) {
-                result.put(i, toJsonValue(Array.get(value, i)));
+        });
+    }
+
+    private void verifyCaptcha(JSONArray args, CallbackContext callbackContext) {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    String apiKey = args.getString(1);
+                    verify(apiKey, callbackContext);
+                } catch (Exception e) {
+                    callbackContext.error(e.getMessage());
+                }
             }
-            return result;
-        } else if (value instanceof ArrayList<?>) {
-            final ArrayList arrayList = (ArrayList<?>) value;
-            final JSONArray result = new JSONArray();
-            for (int i = 0; i < arrayList.size(); i++)
-                result.put(toJsonValue(arrayList.get(i)));
-            return result;
-        } else if (
-                value instanceof String
-                        || value instanceof Boolean
-                        || value instanceof Integer
-                        || value instanceof Long
-                        || value instanceof Double) {
-            return value;
+        });
+    }
+
+    private void verify(String apiKey, CallbackContext callbackContext) {
+        if (apiKey.length() > 0) {
+            SafetyNet.getClient(cordova.getActivity())
+                    .verifyWithRecaptcha(apiKey)
+                    .addOnSuccessListener(cordova.getActivity(),
+                            new OnSuccessListener<SafetyNetApi.RecaptchaTokenResponse>() {
+                                @Override
+                                public void onSuccess(SafetyNetApi.RecaptchaTokenResponse response) {
+                                    String userResponseToken = response.getTokenResult();
+                                    if (!userResponseToken.isEmpty()) {
+                                        callbackContext.success(userResponseToken);
+                                    } else {
+                                        callbackContext.error("Repsonse token was empty.");
+                                    }
+                                }
+                            })
+                    .addOnFailureListener(cordova.getActivity(),
+                            new OnFailureListener() {
+                                @Override
+                                public void onFailure(@NonNull Exception e) {
+                                    if (e instanceof ApiException) {
+                                        // An error we know about occurred.
+                                        ApiException apiException = (ApiException) e;
+                                        int statusCode = apiException.getStatusCode();
+                                        String message = CommonStatusCodes.getStatusCodeString(statusCode);
+                                        callbackContext.error(message);
+                                    } else {
+                                        // A different, unknown type of error occurred.
+                                        callbackContext.error(e.getMessage());
+                                    }
+                                }
+                            });
+
         } else {
-            return String.valueOf(value);
+            callbackContext.error("Verify called without providing a Site Key");
         }
     }
 
-    @Override
-    public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
-        if (action.equals("getBuildConfigValue")) {
-            this.getBuildConfigParam(args, callbackContext);
-            return true;
-        } else if (action.equals("rm")) {
-            this.removeDirectory(args, callbackContext);
-            return true;
-        } else if (action.equalsIgnoreCase("openPlayStore")) {
-            String appId = args.getString(1);
-            openGooglePlay(cordova, appId);
-            callbackContext.success();
-
-        } else if (action.equalsIgnoreCase("getDeviceAPILevel")) {
-            getDeviceAPILevel(callbackContext);
-
-        } else if (action.equalsIgnoreCase("checkAppAvailability")) {
-            checkAppAvailability(cordova, args, callbackContext);
-
-        } else if (action.equalsIgnoreCase("getDownloadDirectoryPath")) {
-            getDownloadDirectoryPath(callbackContext);
-
-        } else if (action.equalsIgnoreCase("exportApk")) {
-            exportApk(args, cordova, callbackContext);
-
-        } else if (action.equalsIgnoreCase("getBuildConfigValues")) {
-
-            getBuildConfigValues(args, callbackContext);
-        } else if (action.equalsIgnoreCase("getDeviceSpec")) {
-            try {
-                callbackContext.success(new DeviceSpecGenerator().getDeviceSpec(cordova.getActivity()));
-            } catch (Exception e) {
-                callbackContext.error(e.getMessage());
+    private void getAvailableAppLists(CordovaInterface cordova, CallbackContext callbackContext, JSONArray appList) {
+        final PackageManager packageManager = cordova.getContext().getPackageManager();
+        List<ApplicationInfo> packagesList = packageManager.getInstalledApplications(PackageManager.GET_META_DATA);
+        List<String> packageNameList = new ArrayList();
+        for(ApplicationInfo p: packagesList) {
+            packageNameList.add(p.packageName);
+        }
+        JSONObject availableAppsMap = new JSONObject();
+        try {
+            for (int i = 0; i < appList.length(); i++) {
+                if (packageNameList.contains(appList.getString(i))) {
+                    availableAppsMap.put(appList.getString(i), true);
+                } else {
+                    availableAppsMap.put(appList.getString(i), false);
+                }
             }
-        } else if (action.equalsIgnoreCase("createDirectories")) {
-
-            createDirectories(args, callbackContext);
-        } else if (action.equalsIgnoreCase("writeFile")) {
-
-            writeFile(args, callbackContext);
-        } else if (action.equalsIgnoreCase("getMetaData")) {
-
-            getMetaData(args, callbackContext);
-        } else if (action.equalsIgnoreCase("getAvailableInternalMemorySize")) {
-
-            getAvailableInternalMemorySize(callbackContext);
-        } else if (action.equalsIgnoreCase("getUtmInfo")) {
-
-            getUtmInfo(cordova, callbackContext);
-            return true;
-        } else if (action.equalsIgnoreCase("clearUtmInfo")) {
-
-            clearUtmInfo(cordova, callbackContext);
-        } else if (action.equalsIgnoreCase("getStorageVolumes")) {
-
-            getStorageVolumes(cordova, callbackContext);
-        } else if (action.equalsIgnoreCase("copyDirectory")) {
-
-            copyDirectory(args, callbackContext);
-            return true;
-        } else if (action.equalsIgnoreCase("renameDirectory")) {
-
-            renameDirectory(args, callbackContext);
-        } else if (action.equalsIgnoreCase("canWrite")) {
-
-            canWrite(args, callbackContext);
-        } else if (action.equalsIgnoreCase("getFreeUsableSpace")) {
-
-            getUsableSpace(args, callbackContext);
-        } else if (action.equalsIgnoreCase("readFromAssets")) {
-
-            readFromAssets(args, callbackContext);
-            return true;
-        } else if (action.equalsIgnoreCase("copyFile")) {
-            copyFile(args, callbackContext);
-            return true;
-        } else if (action.equalsIgnoreCase("getApkSize")) {
-            getApkSize(cordova, callbackContext);
-            return true;
-        } else if (action.equalsIgnoreCase("getAvailableAppLists")) {
-            getAvailableAppLists(cordova, callbackContext, args.getJSONArray(0));
-            return true;
-        } else if (action.equalsIgnoreCase("startActivityForResult")) {
-            if (args.length() != 1) {
-                callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.INVALID_ACTION));
-                return false;
-            }
-            JSONObject object = args.getJSONObject(0);
-            Intent intent = populateIntent(object, callbackContext);
-            int requestCode = object.has("requestCode") ? object.getInt("requestCode") : 1;
-            this.onActivityResultCallbackContext = callbackContext;
-            startActivity(intent, requestCode, callbackContext);
-            return true;
+        } catch (Exception e) {
+            e.getMessage();
         }
-
-        return false;
-    }
-
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent intent) {
-        super.onActivityResult(requestCode, resultCode, intent);
-        if (onActivityResultCallbackContext != null && intent != null) {
-            intent.putExtra("requestCode", requestCode);
-            intent.putExtra("resultCode", resultCode);
-            PluginResult result = new PluginResult(PluginResult.Status.OK, getIntentJson(intent));
-            result.setKeepCallback(true);
-            onActivityResultCallbackContext.sendPluginResult(result);
-        } else if (onActivityResultCallbackContext != null) {
-            Intent canceledIntent = new Intent();
-            canceledIntent.putExtra("requestCode", requestCode);
-            canceledIntent.putExtra("resultCode", resultCode);
-            PluginResult canceledResult = new PluginResult(PluginResult.Status.OK, getIntentJson(canceledIntent));
-            canceledResult.setKeepCallback(true);
-            onActivityResultCallbackContext.sendPluginResult(canceledResult);
-        }
-
-        this.onActivityResultCallbackContext = null;
-    }
-
-    private void startActivity(Intent intent, int requestCode, CallbackContext callbackContext) {
-        if (intent.resolveActivityInfo(this.cordova.getActivity().getPackageManager(), 0) != null) {
-            cordova.setActivityResultCallback(this);
-            this.cordova.getActivity().startActivityForResult(intent, requestCode);
-        }
+        callbackContext.success(availableAppsMap);
     }
 
     private Intent populateIntent(JSONObject obj, CallbackContext callbackContext) throws JSONException {
@@ -768,100 +852,32 @@ public class UtilityPlugin extends CordovaPlugin {
         return returnBundle;
     }
 
-    private void getAvailableAppLists(CordovaInterface cordova, CallbackContext callbackContext, JSONArray appList) {
-        final PackageManager packageManager = cordova.getContext().getPackageManager();
-        List<ApplicationInfo> packagesList = packageManager.getInstalledApplications(PackageManager.GET_META_DATA);
-        List<String> packageNameList = new ArrayList();
-        for(ApplicationInfo p: packagesList) {
-            packageNameList.add(p.packageName);
+    private void startActivity(Intent intent, int requestCode, CallbackContext callbackContext) {
+        if (intent.resolveActivityInfo(this.cordova.getActivity().getPackageManager(), 0) != null) {
+            cordova.setActivityResultCallback(this);
+            this.cordova.getActivity().startActivityForResult(intent, requestCode);
         }
-        JSONObject availableAppsMap = new JSONObject();
-        try {
-            for (int i = 0; i < appList.length(); i++) {
-                if (packageNameList.contains(appList.getString(i))) {
-                    availableAppsMap.put(appList.getString(i), true);
-                } else {
-                    availableAppsMap.put(appList.getString(i), false);
-                }
-            }
-        } catch (Exception e) {
-            e.getMessage();
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        super.onActivityResult(requestCode, resultCode, intent);
+        if (onActivityResultCallbackContext != null && intent != null) {
+            intent.putExtra("requestCode", requestCode);
+            intent.putExtra("resultCode", resultCode);
+            PluginResult result = new PluginResult(PluginResult.Status.OK, getIntentJson(intent));
+            result.setKeepCallback(true);
+            onActivityResultCallbackContext.sendPluginResult(result);
+        } else if (onActivityResultCallbackContext != null) {
+            Intent canceledIntent = new Intent();
+            canceledIntent.putExtra("requestCode", requestCode);
+            canceledIntent.putExtra("resultCode", resultCode);
+            PluginResult canceledResult = new PluginResult(PluginResult.Status.OK, getIntentJson(canceledIntent));
+            canceledResult.setKeepCallback(true);
+            onActivityResultCallbackContext.sendPluginResult(canceledResult);
         }
-        callbackContext.success(availableAppsMap);
-    }
 
-    private void removeDirectory(JSONArray args, CallbackContext callbackContext) {
-        cordova.getThreadPool().execute(new Runnable() {
-            public void run() {
-                try {
-                    FileUtil.rm(new File(args.getString(0).replace("file://", "")), args.getString(1));
-                    callbackContext.success();
-                } catch (Exception e) {
-                    callbackContext.error("Error while deleting");
-                }
-            }
-        });
-    }
-
-    private void copyDirectory(JSONArray args, CallbackContext callbackContext) {
-        cordova.getThreadPool().execute(new Runnable() {
-            public void run() {
-                try {
-                    String sourceDirectory = args.getString(1).replace("file://", "");
-                    String destinationDirectory = args.getString(2).replace("file://", "");
-                    FileUtil.copyFolder(new File(sourceDirectory), new File(destinationDirectory));
-                    callbackContext.success();
-                } catch (Exception e) {
-                    callbackContext.error(e.getMessage());
-                }
-            }
-        });
-
-
-    }
-
-    private  void readFromAssets(JSONArray args, CallbackContext callbackContext)  {
-        cordova.getThreadPool().execute(new Runnable() {
-            public void run() {
-                try {
-                    String fileName = args.getString(1).replace("file:///android_asset/","");
-                    String output = FileUtil.readFileFromAssets(cordova.getActivity().getAssets().open(fileName));
-                    if(output != null){
-                        callbackContext.success(output);
-                    }else{
-                        callbackContext.error(0);
-                    }
-
-                } catch (Exception e) {
-                    e.getMessage();
-                    callbackContext.error(e.getMessage());
-                }
-                    
-            }
-        });
-
-    }
-
-    private  void copyFile(JSONArray args, CallbackContext callbackContext)  {
-        cordova.getThreadPool().execute(new Runnable() {
-            public void run() {
-                try {
-                    String sourcePath = args.getString(1).replace("file://", "");
-                    String destinationPath = args.getString(2).replace("file://", "");
-                    String fileName = args.getString(3);
-                    File source = new File(sourcePath, fileName);
-                    if (source.exists()) {
-                        File dest = new File(destinationPath, fileName);
-                        dest.getParentFile().mkdirs();
-
-                        FileUtil.cp(source, dest);
-                    }
-                    callbackContext.success();
-                } catch (Exception e) {
-                    callbackContext.error(e.getMessage());
-                }
-            }
-        });
+        this.onActivityResultCallbackContext = null;
     }
 
     private JSONObject getIntentJson(Intent intent) {
@@ -933,4 +949,52 @@ public class UtilityPlugin extends CordovaPlugin {
             return null;
         }
     }
+
+    private static JSONObject toJsonObject(Bundle bundle) {
+        //  Credit: https://github.com/napolitano/cordova-plugin-intent
+        try {
+            return (JSONObject) toJsonValue(bundle);
+        } catch (JSONException e) {
+            throw new IllegalArgumentException("Cannot convert bundle to JSON: " + e.getMessage(), e);
+        }
+    }
+
+    private static Object toJsonValue(final Object value) throws JSONException {
+        //  Credit: https://github.com/napolitano/cordova-plugin-intent
+        if (value == null) {
+            return null;
+        } else if (value instanceof Bundle) {
+            final Bundle bundle = (Bundle) value;
+            final JSONObject result = new JSONObject();
+            for (final String key : bundle.keySet()) {
+                result.put(key, toJsonValue(bundle.get(key)));
+            }
+            return result;
+        } else if ((value.getClass().isArray())) {
+            final JSONArray result = new JSONArray();
+            int length = Array.getLength(value);
+            for (int i = 0; i < length; ++i) {
+                result.put(i, toJsonValue(Array.get(value, i)));
+            }
+            return result;
+        } else if (value instanceof ArrayList<?>) {
+            final ArrayList arrayList = (ArrayList<?>) value;
+            final JSONArray result = new JSONArray();
+            for (int i = 0; i < arrayList.size(); i++)
+                result.put(toJsonValue(arrayList.get(i)));
+            return result;
+        } else if (
+                value instanceof String
+                        || value instanceof Boolean
+                        || value instanceof Integer
+                        || value instanceof Long
+                        || value instanceof Double) {
+            return value;
+        } else {
+            return String.valueOf(value);
+        }
+    }
+
+
+
 }
