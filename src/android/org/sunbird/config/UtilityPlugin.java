@@ -16,7 +16,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.text.Html;
 import android.text.TextUtils;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.webkit.MimeTypeMap;
@@ -148,10 +148,10 @@ public class UtilityPlugin extends CordovaPlugin {
         }else if (action.equalsIgnoreCase("verifyCaptcha")) {
             verifyCaptcha(args, callbackContext);
             return true;
-        }else if (action.equalsIgnoreCase("getAvailableAppLists")) {
-            getAvailableAppLists(cordova, callbackContext, args.getJSONArray(0));
+        }else if (action.equalsIgnoreCase("getAppAvailabilityStatus")) {
+            getAppAvailabilityStatus(cordova, callbackContext, args.getJSONArray(0));
             return true;
-        } else if (action.equalsIgnoreCase("startActivityForResult")) {
+        }else if (action.equalsIgnoreCase("startActivityForResult")) {
             if (args.length() != 1) {
                 callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.INVALID_ACTION));
                 return false;
@@ -607,7 +607,7 @@ public class UtilityPlugin extends CordovaPlugin {
         }
     }
 
-    private void getAvailableAppLists(CordovaInterface cordova, CallbackContext callbackContext, JSONArray appList) {
+    private void getAppAvailabilityStatus(CordovaInterface cordova, CallbackContext callbackContext, JSONArray appList) {
         final PackageManager packageManager = cordova.getContext().getPackageManager();
         List<ApplicationInfo> packagesList = packageManager.getInstalledApplications(PackageManager.GET_META_DATA);
         List<String> packageNameList = new ArrayList();
@@ -617,11 +617,7 @@ public class UtilityPlugin extends CordovaPlugin {
         JSONObject availableAppsMap = new JSONObject();
         try {
             for (int i = 0; i < appList.length(); i++) {
-                if (packageNameList.contains(appList.getString(i))) {
-                    availableAppsMap.put(appList.getString(i), true);
-                } else {
-                    availableAppsMap.put(appList.getString(i), false);
-                }
+                availableAppsMap.put(appList.getString(i), packageNameList.contains(appList.getString(i)));
             }
         } catch (Exception e) {
             e.getMessage();
@@ -882,55 +878,8 @@ public class UtilityPlugin extends CordovaPlugin {
 
     private JSONObject getIntentJson(Intent intent) {
         JSONObject intentJSON = null;
-        ClipData clipData = null;
-        JSONObject[] items = null;
-        ContentResolver cR = this.cordova.getActivity().getApplicationContext().getContentResolver();
-        MimeTypeMap mime = MimeTypeMap.getSingleton();
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            clipData = intent.getClipData();
-            if (clipData != null) {
-                int clipItemCount = clipData.getItemCount();
-                items = new JSONObject[clipItemCount];
-
-                for (int i = 0; i < clipItemCount; i++) {
-
-                    ClipData.Item item = clipData.getItemAt(i);
-
-                    try {
-                        items[i] = new JSONObject();
-                        items[i].put("htmlText", item.getHtmlText());
-                        items[i].put("intent", item.getIntent());
-                        items[i].put("text", item.getText());
-                        items[i].put("uri", item.getUri());
-
-                        if (item.getUri() != null) {
-                            String type = cR.getType(item.getUri());
-                            String extension = mime.getExtensionFromMimeType(cR.getType(item.getUri()));
-
-                            items[i].put("type", type);
-                            items[i].put("extension", extension);
-                        }
-
-                    } catch (JSONException e) {
-                        Log.d("UtilityPlugin", " Error thrown during intent > JSON conversion");
-                        Log.d("UtilityPlugin", e.getMessage());
-                        Log.d("UtilityPlugin", Arrays.toString(e.getStackTrace()));
-                    }
-
-                }
-            }
-        }
-
         try {
             intentJSON = new JSONObject();
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                if (items != null) {
-                    intentJSON.put("clipItems", new JSONArray(items));
-                }
-            }
-
             intentJSON.put("type", intent.getType());
             intentJSON.put("extras", toJsonObject(intent.getExtras()));
             intentJSON.put("action", intent.getAction());
@@ -939,13 +888,11 @@ public class UtilityPlugin extends CordovaPlugin {
             intentJSON.put("component", intent.getComponent());
             intentJSON.put("data", intent.getData());
             intentJSON.put("package", intent.getPackage());
-
             return intentJSON;
         } catch (JSONException e) {
             Log.d("UtilityPlugin", " Error thrown during intent > JSON conversion");
             Log.d("UtilityPlugin", e.getMessage());
             Log.d("UtilityPlugin", Arrays.toString(e.getStackTrace()));
-
             return null;
         }
     }

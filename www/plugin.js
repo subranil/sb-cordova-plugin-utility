@@ -84,8 +84,8 @@ var sbutility = {
     startActivityForResult: function (params, onSuccess, onError) {
         exec(onSuccess, onError, PLUGIN_NAME, "startActivityForResult", [params]);
     },
-    getAvailableAppLists: function (appList, onSuccess, onError) {
-        exec(onSuccess, onError, PLUGIN_NAME, "getAvailableAppLists", [appList]);
+    getAppAvailabilityStatus: function (appList, onSuccess, onError) {
+        exec(onSuccess, onError, PLUGIN_NAME, "getAppAvailabilityStatus", [appList]);
     }
 };
 
