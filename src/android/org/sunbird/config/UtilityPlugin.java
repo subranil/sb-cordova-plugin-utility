@@ -140,7 +140,7 @@ public class UtilityPlugin extends CordovaPlugin {
                 return false;
             }
             JSONObject object = args.getJSONObject(0);
-            Intent intent = PopulateIntentUtil.populateIntent(object, callbackContext);
+            Intent intent = IntentUtil.populateIntent(object, callbackContext);
             int requestCode = object.has("requestCode") ? object.getInt("requestCode") : 1;
             this.onActivityResultCallbackContext = callbackContext;
             startActivity(intent, requestCode, callbackContext);
@@ -621,14 +621,14 @@ public class UtilityPlugin extends CordovaPlugin {
         if (onActivityResultCallbackContext != null && intent != null) {
             intent.putExtra("requestCode", requestCode);
             intent.putExtra("resultCode", resultCode);
-            PluginResult result = new PluginResult(PluginResult.Status.OK, GetIntentJsonUtil.getIntentJson(intent));
+            PluginResult result = new PluginResult(PluginResult.Status.OK, IntentUtil.getIntentJson(intent));
             result.setKeepCallback(true);
             onActivityResultCallbackContext.sendPluginResult(result);
         } else if (onActivityResultCallbackContext != null) {
             Intent canceledIntent = new Intent();
             canceledIntent.putExtra("requestCode", requestCode);
             canceledIntent.putExtra("resultCode", resultCode);
-            PluginResult canceledResult = new PluginResult(PluginResult.Status.OK, GetIntentJsonUtil.getIntentJson(canceledIntent));
+            PluginResult canceledResult = new PluginResult(PluginResult.Status.OK, IntentUtil.getIntentJson(canceledIntent));
             canceledResult.setKeepCallback(true);
             onActivityResultCallbackContext.sendPluginResult(canceledResult);
         }
