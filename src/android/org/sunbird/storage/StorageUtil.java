@@ -27,6 +27,7 @@ public class StorageUtil {
     // Methods
     private final static String METHOD_GET_VOLUME_LIST = "getVolumeList";
     private final static String METHOD_GET_VOLUME_STATE = "getState";
+    private final static String METHOD_GET_DIRECTORY = "getDirectory";
     private final static String METHOD_IS_REMOVABLE = "isRemovable";
     private final static String METHOD_GET_PATH = "getPath";
 
@@ -46,10 +47,15 @@ public class StorageUtil {
             String path;
             File file = null;
             Method getPath = null;
+            Method mGetDirectory = null;
             if (android.os.Build.VERSION.SDK_INT >= 30) {
-                storageVolumes = storageManager.getStorageVolumes();
+                try {
+                    mGetDirectory = storageValumeClazz.getMethod(METHOD_GET_DIRECTORY);
+                } catch (NoSuchMethodException e) {
+                    e.printStackTrace();
+                }
                 for (StorageVolume volumes : storageVolumes) {
-                    file = volumes.getDirectory();
+                    file = (File) mGetDirectory.invoke(volumes);
                 }
             } else {
                 getPath = storageValumeClazz.getMethod(METHOD_GET_PATH);
