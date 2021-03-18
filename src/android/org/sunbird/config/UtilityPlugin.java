@@ -629,16 +629,10 @@ public class UtilityPlugin extends CordovaPlugin {
         String type = obj.has("type") ? obj.getString("type") : null;
         String packageAssociated = obj.has("package") ? obj.getString("package") : null;
 
-        //Uri uri = obj.has("url") ? resourceApi.remapUri(Uri.parse(obj.getString("url"))) : null;
         Uri uri = null;
         final CordovaResourceApi resourceApi = webView.getResourceApi();
         if (obj.has("url")) {
             String uriAsString = obj.getString("url");
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && uriAsString.startsWith("file://")) {
-                uri = remapUriWithFileProvider(uriAsString, callbackContext);
-            } else {
-                uri = resourceApi.remapUri(Uri.parse(obj.getString("url")));
-            }
         }
 
         JSONObject extras = obj.has("extras") ? obj.getJSONObject("extras") : null;
@@ -693,13 +687,7 @@ public class UtilityPlugin extends CordovaPlugin {
         if (packageAssociated != null)
             i.setPackage(packageAssociated);
 
-        JSONArray flags = obj.has("flags") ? obj.getJSONArray("flags") : null;
-        if (flags != null) {
-            int length = flags.length();
-            for (int k = 0; k < length; k++) {
-                i.addFlags(flags.getInt(k));
-            }
-        }
+
 
         if (bundle != null)
             i.putExtra(bundleKey, bundle);
@@ -707,91 +695,21 @@ public class UtilityPlugin extends CordovaPlugin {
         for (String key : extrasMap.keySet()) {
             Object value = extrasMap.get(key);
             String valueStr = String.valueOf(value);
-            // If type is text html, the extra text must sent as HTML
-            if (key.equals(Intent.EXTRA_TEXT) && type.equals("text/html")) {
-                i.putExtra(key, Html.fromHtml(valueStr));
-            } else if (key.equals(Intent.EXTRA_STREAM)) {
-                // allows sharing of images as attachments.
-                // value in this case should be a URI of a file
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && valueStr.startsWith("file://")) {
-                    Uri uriOfStream = remapUriWithFileProvider(valueStr, callbackContext);
-                    if (uriOfStream != null)
-                        i.putExtra(key, uriOfStream);
-                } else {
-                    //final CordovaResourceApi resourceApi = webView.getResourceApi();
-                    i.putExtra(key, resourceApi.remapUri(Uri.parse(valueStr)));
-                }
-            } else if (key.equals(Intent.EXTRA_EMAIL)) {
-                // allows to add the email address of the receiver
-                i.putExtra(Intent.EXTRA_EMAIL, new String[]{valueStr});
-            } else if (key.equals(Intent.EXTRA_KEY_EVENT)) {
-                // allows to add a key event object
-                JSONObject keyEventJson = new JSONObject(valueStr);
-                int keyAction = keyEventJson.getInt("action");
-                int keyCode = keyEventJson.getInt("code");
-                KeyEvent keyEvent = new KeyEvent(keyAction, keyCode);
-                i.putExtra(Intent.EXTRA_KEY_EVENT, keyEvent);
+
+            if (value instanceof Boolean) {
+                i.putExtra(key, Boolean.valueOf(valueStr));
+            } else if (value instanceof Integer) {
+                i.putExtra(key, Integer.valueOf(valueStr));
+            } else if (value instanceof Long) {
+                i.putExtra(key, Long.valueOf(valueStr));
+            } else if (value instanceof Double) {
+                i.putExtra(key, Double.valueOf(valueStr));
             } else {
-                if (value instanceof Boolean) {
-                    i.putExtra(key, Boolean.valueOf(valueStr));
-                } else if (value instanceof Integer) {
-                    i.putExtra(key, Integer.valueOf(valueStr));
-                } else if (value instanceof Long) {
-                    i.putExtra(key, Long.valueOf(valueStr));
-                } else if (value instanceof Double) {
-                    i.putExtra(key, Double.valueOf(valueStr));
-                } else {
-                    i.putExtra(key, valueStr);
-                }
+                i.putExtra(key, valueStr);
             }
+
         }
-
-        i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
-        if (obj.has("chooser")) {
-            i = Intent.createChooser(i, obj.getString("chooser"));
-        }
-
         return i;
-    }
-
-    private Uri remapUriWithFileProvider(String uriAsString, final CallbackContext callbackContext) {
-        //  Create the URI via FileProvider  Special case for N and above when installing apks
-        int permissionCheck = ContextCompat.checkSelfPermission(this.cordova.getActivity(),
-                Manifest.permission.READ_EXTERNAL_STORAGE);
-        if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
-            //  Could do better here - if the app does not already have permission should
-            //  only continue when we get the success callback from this.
-            ActivityCompat.requestPermissions(this.cordova.getActivity(),
-                    new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 1);
-            callbackContext.error("Please grant read external storage permission");
-            return null;
-        }
-
-        try {
-            String externalStorageState = Environment.getExternalStorageDirectory().getAbsolutePath();
-            if (externalStorageState.equals(Environment.MEDIA_MOUNTED) || externalStorageState.equals(Environment.MEDIA_MOUNTED_READ_ONLY)) {
-                String fileName = uriAsString.substring(uriAsString.indexOf('/') + 2, uriAsString.length());
-                File uriAsFile = new File(fileName);
-                boolean fileExists = uriAsFile.exists();
-                if (!fileExists) {
-                    Log.e("UtilityPlugin", "File at path " + uriAsFile.getPath() + " with name " + uriAsFile.getName() + "does not exist");
-                    callbackContext.error("File not found: " + uriAsFile.toString());
-                    return null;
-                }
-                String PACKAGE_NAME = this.cordova.getActivity().getPackageName() + ".darryncampbell.cordova.plugin.intent.fileprovider";
-                Uri uri = FileProvider.getUriForFile(this.cordova.getActivity().getApplicationContext(), PACKAGE_NAME, uriAsFile);
-                return uri;
-            } else {
-                Log.e("UtilityPlugin", "Storage directory is not mounted.  Please ensure the device is not connected via USB for file transfer");
-                callbackContext.error("Storage directory is returning not mounted");
-                return null;
-            }
-        } catch (StringIndexOutOfBoundsException e) {
-            Log.e("UtilityPlugin", "URL is not well formed");
-            callbackContext.error("URL is not well formed");
-            return null;
-        }
     }
 
     private Bundle toBundle(final JSONObject obj) {
