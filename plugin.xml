@@ -30,6 +30,7 @@
        <source-file src="src/android/org/sunbird/storage/StorageUtil.java" target-dir="src/org/sunbird/storage" />
         <source-file src="src/android/org/sunbird/utm/PlayStoreInstallReferrer.java" target-dir="src/org/sunbird/utm" />
         <source-file src="src/android/org/sunbird/utm/InstallReferrerListener.java" target-dir="src/org/sunbird/utm" />
+        <source-file src="src/android/org/sunbird/config/IntentUtil.java" target-dir="src/org/sunbird/config" />
 
     </platform>
 

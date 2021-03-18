@@ -80,6 +80,12 @@ var sbutility = {
     },
     verifyCaptcha: function (apiKey, onSuccess, onError) {
         exec(onSuccess, onError, PLUGIN_NAME, "verifyCaptcha", ["verifyCaptcha", apiKey]);
+    },
+    startActivityForResult: function (params, onSuccess, onError) {
+        exec(onSuccess, onError, PLUGIN_NAME, "startActivityForResult", [params]);
+    },
+    getAppAvailabilityStatus: function (appList, onSuccess, onError) {
+        exec(onSuccess, onError, PLUGIN_NAME, "getAppAvailabilityStatus", [appList]);
     }
 };
 

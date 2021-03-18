@@ -10,8 +10,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.text.TextUtils;
-import android.support.annotation.NonNull;
-import android.util.Log;
+import androidx.annotation.NonNull;
 
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.CommonStatusCodes;
@@ -23,18 +22,22 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
+import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.sunbird.storage.StorageUtil;
 import org.sunbird.utm.InstallReferrerListener;
 import org.sunbird.utm.PlayStoreInstallReferrer;
-import org.sunbird.storage.StorageUtil;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -43,6 +46,7 @@ import java.util.Map;
 public class UtilityPlugin extends CordovaPlugin {
 
     private static final String SHARED_PREFERENCES_NAME = "org.ekstep.genieservices.preference_file";
+    private CallbackContext onActivityResultCallbackContext = null;
 
 
     @Override
@@ -126,6 +130,20 @@ public class UtilityPlugin extends CordovaPlugin {
             return true;
         }else if (action.equalsIgnoreCase("verifyCaptcha")) {
             verifyCaptcha(args, callbackContext);
+            return true;
+        }else if (action.equalsIgnoreCase("getAppAvailabilityStatus")) {
+            getAppAvailabilityStatus(cordova, callbackContext, args.getJSONArray(0));
+            return true;
+        }else if (action.equalsIgnoreCase("startActivityForResult")) {
+            if (args.length() != 1) {
+                callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.INVALID_ACTION));
+                return false;
+            }
+            JSONObject object = args.getJSONObject(0);
+            Intent intent = IntentUtil.populateIntent(object, callbackContext);
+            int requestCode = object.has("requestCode") ? object.getInt("requestCode") : 1;
+            this.onActivityResultCallbackContext = callbackContext;
+            startActivity(intent, requestCode, callbackContext);
             return true;
         }
 
@@ -276,7 +294,7 @@ public class UtilityPlugin extends CordovaPlugin {
             callbackContext.error(ex.getMessage());
         }
     }
-    
+
     private static void createDirectories( JSONArray args, CallbackContext callbackContext)  {
         try {
 
@@ -320,7 +338,7 @@ public class UtilityPlugin extends CordovaPlugin {
 
     }
 
-     private static void getMetaData( JSONArray args, CallbackContext callbackContext)  {
+    private static void getMetaData( JSONArray args, CallbackContext callbackContext)  {
         try {
 
             JSONArray inputArray = args.getJSONArray(1);
@@ -382,8 +400,8 @@ public class UtilityPlugin extends CordovaPlugin {
                 callbackContext.success("");
             }
         } catch (Exception e) {
-                callbackContext.error(e.getMessage());
-            }
+            callbackContext.error(e.getMessage());
+        }
 
     }
 
@@ -450,16 +468,16 @@ public class UtilityPlugin extends CordovaPlugin {
 
     }
 
-     private static void canWrite(JSONArray args, CallbackContext callbackContext)  {
+    private static void canWrite(JSONArray args, CallbackContext callbackContext)  {
         try {
             String directory = args.getString(1).replace("file://", "");
             boolean canWrite = new File(directory).canWrite();
             if(canWrite){
                 callbackContext.success();
             }else{
-                callbackContext.error("Can't write to the folder"); 
+                callbackContext.error("Can't write to the folder");
             }
-           
+
         } catch (Exception e) {
             callbackContext.error(e.getMessage());
         }
@@ -493,7 +511,7 @@ public class UtilityPlugin extends CordovaPlugin {
                     e.getMessage();
                     callbackContext.error(e.getMessage());
                 }
-                    
+
             }
         });
 
@@ -571,4 +589,51 @@ public class UtilityPlugin extends CordovaPlugin {
             callbackContext.error("Verify called without providing a Site Key");
         }
     }
+
+    private void getAppAvailabilityStatus(CordovaInterface cordova, CallbackContext callbackContext, JSONArray appList) {
+        final PackageManager packageManager = cordova.getContext().getPackageManager();
+        List<ApplicationInfo> packagesList = packageManager.getInstalledApplications(PackageManager.GET_META_DATA);
+        List<String> packageNameList = new ArrayList();
+        for(ApplicationInfo p: packagesList) {
+            packageNameList.add(p.packageName);
+        }
+        JSONObject availableAppsMap = new JSONObject();
+        try {
+            for (int i = 0; i < appList.length(); i++) {
+                availableAppsMap.put(appList.getString(i), packageNameList.contains(appList.getString(i)));
+            }
+        } catch (Exception e) {
+            e.getMessage();
+        }
+        callbackContext.success(availableAppsMap);
+    }
+
+    private void startActivity(Intent intent, int requestCode, CallbackContext callbackContext) {
+        if (intent.resolveActivityInfo(this.cordova.getActivity().getPackageManager(), 0) != null) {
+            cordova.setActivityResultCallback(this);
+            this.cordova.getActivity().startActivityForResult(intent, requestCode);
+        }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        super.onActivityResult(requestCode, resultCode, intent);
+        if (onActivityResultCallbackContext != null && intent != null) {
+            intent.putExtra("requestCode", requestCode);
+            intent.putExtra("resultCode", resultCode);
+            PluginResult result = new PluginResult(PluginResult.Status.OK, IntentUtil.getIntentJson(intent));
+            result.setKeepCallback(true);
+            onActivityResultCallbackContext.sendPluginResult(result);
+        } else if (onActivityResultCallbackContext != null) {
+            Intent canceledIntent = new Intent();
+            canceledIntent.putExtra("requestCode", requestCode);
+            canceledIntent.putExtra("resultCode", resultCode);
+            PluginResult canceledResult = new PluginResult(PluginResult.Status.OK, IntentUtil.getIntentJson(canceledIntent));
+            canceledResult.setKeepCallback(true);
+            onActivityResultCallbackContext.sendPluginResult(canceledResult);
+        }
+
+        this.onActivityResultCallbackContext = null;
+    }
+
 }

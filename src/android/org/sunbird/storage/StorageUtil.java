@@ -46,7 +46,7 @@ public class StorageUtil {
             String path;
             File file = null;
             Method getPath = null;
-            if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (android.os.Build.VERSION.SDK_INT >= 30) {
                 storageVolumes = storageManager.getStorageVolumes();
                 for (StorageVolume volumes : storageVolumes) {
                     file = volumes.getDirectory();
@@ -69,7 +69,7 @@ public class StorageUtil {
             JSONArray storageList = new JSONArray();
             for (int i = 0; i < length; i++) {
                 final Object storageVolume = Array.get(invokeVolumeList, i);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                if (Build.VERSION.SDK_INT >= 30) {
                     path = file.getAbsolutePath();
                 } else {
                     path = (String) getPath.invoke(storageVolume);
