@@ -49,6 +49,7 @@ public class StorageUtil {
             Method getPath = null;
             Method mGetDirectory = null;
             if (android.os.Build.VERSION.SDK_INT >= 30) {
+            storageVolumes = storageManager.getStorageVolumes();
                 try {
                     mGetDirectory = storageValumeClazz.getMethod(METHOD_GET_DIRECTORY);
                 } catch (NoSuchMethodException e) {
