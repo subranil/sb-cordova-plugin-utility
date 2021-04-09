@@ -145,7 +145,10 @@ public class UtilityPlugin extends CordovaPlugin {
             this.onActivityResultCallbackContext = callbackContext;
             startActivity(intent, requestCode, callbackContext);
             return true;
-        }
+        }else if (action.equalsIgnoreCase("openFileManager")) {
+            openFileManager();
+            return true;
+         }
 
         return false;
     }
@@ -636,4 +639,10 @@ public class UtilityPlugin extends CordovaPlugin {
         this.onActivityResultCallbackContext = null;
     }
 
+    private void openFileManager() {
+            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+            Uri uri = Uri.parse(cordova.getContext().getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS).toString());
+            intent.setDataAndType(uri, "application/octet-stream");
+            this.cordova.getActivity().startActivity(intent);
+        }
 }
