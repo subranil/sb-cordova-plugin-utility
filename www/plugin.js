@@ -86,6 +86,9 @@ var sbutility = {
     },
     getAppAvailabilityStatus: function (appList, onSuccess, onError) {
         exec(onSuccess, onError, PLUGIN_NAME, "getAppAvailabilityStatus", [appList]);
+    },
+    openFileManager: function (onSuccess, onError) {
+        exec(onSuccess, onError, PLUGIN_NAME, "openFileManager", []);
     }
 };
 
