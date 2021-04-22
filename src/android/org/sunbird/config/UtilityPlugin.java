@@ -642,7 +642,7 @@ public class UtilityPlugin extends CordovaPlugin {
     private void openFileManager() {
             Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
             Uri uri = Uri.parse(cordova.getContext().getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS).toString());
-            intent.setDataAndType(uri, "application/octet-stream");
+            intent.setDataAndType(uri, "*/*");
             this.cordova.getActivity().startActivity(intent);
         }
 }
