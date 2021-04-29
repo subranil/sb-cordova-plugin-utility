@@ -1,45 +1,39 @@
 package org.sunbird.storage;
-
 import android.content.Context;
 import android.os.Build;
 import android.os.Environment;
 import android.os.StatFs;
 import android.os.storage.StorageManager;
-import android.support.v4.content.ContextCompat;
-import android.support.v4.os.EnvironmentCompat;
+import android.os.storage.StorageVolume;
 import android.util.Log;
-
 import org.json.JSONArray;
 import org.json.JSONObject;
-
 import java.io.File;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
-
+import java.util.List;
+import androidx.core.content.ContextCompat;
+import androidx.core.os.EnvironmentCompat;
 /**
  * Created by swayangjit on 9/6/19.
  */
 public class StorageUtil {
-
     // Methods
     private final static String METHOD_GET_VOLUME_LIST = "getVolumeList";
     private final static String METHOD_GET_VOLUME_STATE = "getState";
+    private final static String METHOD_GET_DIRECTORY = "getDirectory";
     private final static String METHOD_IS_REMOVABLE = "isRemovable";
     private final static String METHOD_GET_PATH = "getPath";
-
     // Classes
     private final static String CLASS_GET_VOLUME_LIST = "android.os.storage.StorageVolume";
-
     private static final long GB = 1073741824;
     private static final long MB = 1048576;
     private static final int KB = 1024;
-
     public static JSONArray getStorageVolumes(Context context) {
         final StorageManager storageManager = (StorageManager) context.getSystemService(Context.STORAGE_SERVICE);
         try {
             final Method getVolumeList = storageManager.getClass().getMethod(METHOD_GET_VOLUME_LIST);
             final Class<?> storageValumeClazz = Class.forName(CLASS_GET_VOLUME_LIST);
-            final Method getPath = storageValumeClazz.getMethod(METHOD_GET_PATH);
             Method isRemovable = storageValumeClazz.getMethod(METHOD_IS_REMOVABLE);
             Method mGetState = null;
             if (Build.VERSION.SDK_INT > Build.VERSION_CODES.KITKAT) {
@@ -49,13 +43,12 @@ public class StorageUtil {
                     e.printStackTrace();
                 }
             }
-
             final Object invokeVolumeList = getVolumeList.invoke(storageManager);
             final int length = Array.getLength(invokeVolumeList);
             JSONArray storageList = new JSONArray();
             for (int i = 0; i < length; i++) {
                 final Object storageVolume = Array.get(invokeVolumeList, i);
-                final String path = (String) getPath.invoke(storageVolume);
+                String path = getPath(storageValumeClazz,  storageVolume);
                 final boolean removable = (Boolean) isRemovable.invoke(storageVolume);
                 String state = null;
                 if (mGetState != null) {
@@ -80,17 +73,16 @@ public class StorageUtil {
                 JSONObject storageVolumeObj = new JSONObject();
                 storageVolumeObj.put("availableSize", availaleSize);
                 storageVolumeObj.put("totalSize", fmtSpace(getRealisticTotalSize(totalSize)));
-
                 storageVolumeObj.put("state", state);
-                storageVolumeObj.put("path", "file://"+path+"/");
+                storageVolumeObj.put("path", "file://" + path + "/");
                 storageVolumeObj.put("isRemovable", removable);
                 String appStorageArea = getAppStorageArea(context, path);
-                if(appStorageArea!= null){
+                if (appStorageArea != null) {
                     storageVolumeObj.put("contentStoragePath", appStorageArea);
-                }else{
+                } else {
                     storageVolumeObj.put("contentStoragePath", "file://" + path + "/");
                 }
-                if(totalSize > 0){
+                if (totalSize > 0) {
                     storageList.put(storageVolumeObj);
                 }
             }
@@ -101,7 +93,23 @@ public class StorageUtil {
         }
         return null;
     }
-
+    private static String getPath(Class<?> storageValumeClazz, Object storageVolume) {
+        String path = null;
+        try {
+            Method mGetDirectory = null;
+            if (android.os.Build.VERSION.SDK_INT >= 30) {
+                mGetDirectory = storageValumeClazz.getMethod(METHOD_GET_DIRECTORY);
+                File file = (File) mGetDirectory.invoke(storageVolume);
+                path=  file.getAbsolutePath();
+            } else {
+                Method getPath = storageValumeClazz.getMethod(METHOD_GET_PATH);
+                path =  (String) getPath.invoke(storageVolume);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return path;
+    }
     private static String getAppStorageArea(Context context, String rootDirectoryPath) {
         File[] dirs = ContextCompat.getExternalFilesDirs(context, null);
         for (File d : dirs) {
@@ -114,7 +122,6 @@ public class StorageUtil {
         }
         return null;
     }
-
     private static long getTotalSize(String path) {
         final StatFs statFs = new StatFs(path);
         long blockSize;
@@ -128,7 +135,6 @@ public class StorageUtil {
         }
         return blockSize * blockCountLong;
     }
-
     private static long getRealisticTotalSize(long totalSize) {
         if (totalSize > 2147483648L && totalSize < 4294967296L) {
             return 4294967296L;
@@ -145,9 +151,7 @@ public class StorageUtil {
         } else {
             return totalSize;
         }
-
     }
-
     private static long getAvailableSize(String path) {
         final StatFs statFs = new StatFs(path);
         long blockSize;
@@ -161,7 +165,6 @@ public class StorageUtil {
         }
         return availableBlocks * blockSize;
     }
-
     private static String fmtSpace(long space) {
         if (space <= 0) {
             return "0";
